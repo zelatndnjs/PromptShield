@@ -204,6 +204,11 @@ async def update_mutation(request: Request):
     return {"Mutation_enabled": enabled}
 
 
+@router.get("/current_model")
+async def get_current_model(request: Request):
+    model_name = getattr(request.app.state, "model_name", None)
+    return {"model": model_name or "unknown"}
+
 
 @router.head("/")
 @router.get("/")
@@ -1097,6 +1102,32 @@ async def get_ollama_url(request: Request, model: str, url_idx: Optional[int] = 
     return url, url_idx
 
 
+@router.post("/api/test_chat_noauth")
+async def test_chat_noauth(request: Request):
+    try:
+        body = await request.json()
+        model = body.get("model", "llama3")
+        messages = body.get("messages", [])
+
+        # 기존 채팅 처리 함수 재사용
+        from app.utils.chat import get_chat_completion
+
+        result = await get_chat_completion(
+            messages=messages,
+            model=model,
+            functions=None,
+            function_call=None,
+            stream=False,
+            tools=None,
+            tool_choice=None,
+        )
+
+        return {"choices": [{"message": {"content": result}}]}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+
 @router.post("/api/chat")
 @router.post("/api/chat/{url_idx}")
 async def generate_chat_completion(
@@ -1114,6 +1145,7 @@ async def generate_chat_completion(
     metadata = form_data.pop("metadata", None)
     try:
         form_data = GenerateChatCompletionForm(**form_data)
+        request.app.state.model_name = form_data.model  # 모델명을 전역 상태에 저장
     except Exception as e:
         log.exception(e)
         raise HTTPException(

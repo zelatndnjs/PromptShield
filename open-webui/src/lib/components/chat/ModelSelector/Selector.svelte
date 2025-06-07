@@ -30,6 +30,8 @@
 	import ChatBubbleOval from '$lib/components/icons/ChatBubbleOval.svelte';
 	import { goto } from '$app/navigation';
 
+	 import { isAdmin } from '$lib/stores/session'; 
+
 	const i18n = getContext('i18n');
 	const dispatch = createEventDispatcher();
 
@@ -266,7 +268,9 @@
 		window.setTimeout(() => document.getElementById('model-search-input')?.focus(), 0);
 	}}
 	closeFocus={false}
->
+
+>{#if $isAdmin}
+	<!-- ✅ 관리자: 그대로 노출 -->
 	<DropdownMenu.Trigger
 		class="relative w-full font-primary"
 		aria-label={placeholder}
@@ -283,6 +287,28 @@
 			<ChevronDown className=" self-center ml-2 size-3" strokeWidth="2.5" />
 		</div>
 	</DropdownMenu.Trigger>
+
+{:else}
+  	<!-- 🚫 일반 사용자: 비활성화 및 안내 -->
+	<Tooltip content="관리자만 모델을 변경할 수 있습니다.">
+    	<div class="opacity-50 pointer-events-none">
+      	<DropdownMenu.Trigger
+        	class="relative w-full font-primary"
+        	aria-label={placeholder}
+        	id="model-selector-{id}-button"
+      	>
+        	<div class="flex w-full text-left px-0.5 outline-hidden bg-transparent truncate {triggerClassName} justify-between font-medium placeholder-gray-400 focus:outline-hidden">
+          		{#if selectedModel}
+            		{selectedModel.label}
+          		{:else}
+            		{placeholder}
+          		{/if}
+         		<ChevronDown className=" self-center ml-2 size-3" strokeWidth="2.5" />
+        	</div>
+      	</DropdownMenu.Trigger>
+    	</div>
+  	</Tooltip>
+{/if}
 
 	<DropdownMenu.Content
 		class=" z-40 {$mobile

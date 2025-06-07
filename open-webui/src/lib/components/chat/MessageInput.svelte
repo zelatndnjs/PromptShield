@@ -88,9 +88,6 @@
 	let promptMutationEnabled = false;
 	let promptFilteringEnabled = false;
 
-	function toggleShield() {
-  		promptShieldEnabled = !promptShieldEnabled;
-	}
 
 	function toggleMutation() {
   		promptMutationEnabled = !promptMutationEnabled;
@@ -109,6 +106,18 @@
     		body: JSON.stringify({ enabled: promptFilteringEnabled }),
   		});
 	}
+
+	function toggleShield() {
+  		promptShieldEnabled = !promptShieldEnabled;
+  			fetch('/update_defense', {
+    		method: 'POST',
+    		headers: { 'Content-Type': 'application/json' },
+    		body: JSON.stringify({ enabled: promptShieldEnabled }),
+  		});
+	}
+
+
+
 
 	let loaded = false;
 	let recording = false;

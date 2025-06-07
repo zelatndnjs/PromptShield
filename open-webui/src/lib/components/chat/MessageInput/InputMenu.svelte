@@ -2,6 +2,7 @@
 	import { DropdownMenu } from 'bits-ui';
 	import { flyAndScale } from '$lib/utils/transitions';
 	import { getContext, onMount, tick } from 'svelte';
+	import { writable } from 'svelte/store';
 
 	import { config, user, tools as _tools, mobile } from '$lib/stores';
 	import { createPicker } from '$lib/utils/google-drive-picker';
@@ -45,9 +46,25 @@
 	let tools = {};
 	let show = false;
 
+	// 토글 버튼 관리자 모드에서만 보이게
+  	//const isAdmin = writable(false);
+	import { isAdmin } from '$lib/stores/session';
+	
+  	onMount(async () => {
+    	try {
+      	const res = await fetch('/api/v1/auths/');
+      	const user = await res.json();
+		console.log("현재 로그인된 사용자:", user);
+      	isAdmin.set(user?.role === 'admin');
+    	} catch (err) {
+      	console.error("Failed to fetch session user:", err);
+    	}
+  	});
+
 	$: if (show) {
 		init();
 	}
+	// 토글 버튼 관리자 모드에서만 보이게
 
 	let fileUploadEnabled = true;
 	$: fileUploadEnabled = $user.role === 'admin' || $user?.permissions?.chat?.file_upload;
@@ -332,11 +349,14 @@
 			{/if}
 			
 			<!-- ✅ Prompt Shield / Mutation / Filtering 토글 섹션 -->
-			<div class="flex flex-col gap-2 px-3 pt-2 pb-2 border-t border-gray-200 dark:border-gray-700">
-				<Shield_Toggle label="Prompt Shield" value={isShieldEnabled} onToggle={toggleShield} />
-				<Shield_Toggle label="Prompt Mutation" value={isMutationEnabled} onToggle={toggleMutation} />
-				<Shield_Toggle label="Prompt Filtering" value={isFilteringEnabled} onToggle={toggleFiltering} />
-			</div>
+
+			{#if $isAdmin}
+				<div class="flex flex-col gap-2 px-3 pt-2 pb-2 border-t border-gray-200 dark:border-gray-700">
+					<Shield_Toggle label="Prompt Shield" value={isShieldEnabled} onToggle={toggleShield} />
+					<Shield_Toggle label="Prompt Mutation" value={isMutationEnabled} onToggle={toggleMutation} />
+					<Shield_Toggle label="Prompt Filtering" value={isFilteringEnabled} onToggle={toggleFiltering} />
+				</div>
+			{/if}
 
 
 		</DropdownMenu.Content>

@@ -1698,6 +1698,23 @@
 			return null;
 		});
 
+		if (res?.filtered) {
+			toast.warning("⚠️ 부적절한 메시지로 인해 응답이 제한되었습니다.");
+
+			responseMessage.content = res.choices?.[0]?.message?.content ?? "⚠️ 필터링된 메시지입니다.";
+			// 입력창 관련 상태 초기화
+			responseMessage.done = true;
+			
+			responseMessage.finished = true;
+
+			history.messages[responseMessageId] = responseMessage;
+			history.currentId = responseMessageId;
+
+			await saveChatHandler(_chatId, history);
+
+			return;  // 필터링된 경우 이후 처리 건너뜀
+		}
+
 		console.log(res);
 
 		if (res) {
@@ -1939,13 +1956,6 @@
 	</title>
 </svelte:head>
 
-<!--
-<div class="fixed bottom-4 left-1/2 -translate-x-1/2 flex flex-row gap-3 z-50">
-	<Shield_Toggle label="Prompt Shield" value={isShieldEnabled} onToggle={toggleShield} />
-	<Shield_Toggle label="Prompt Mutation" value={isMutationEnabled} onToggle={toggleMutation} />
-	<Shield_Toggle label="Prompt Filtering" value={isFilteringEnabled} onToggle={toggleFiltering} />
-</div>
--->
 
 <audio id="audioElement" src="" style="display: none;" />
 
