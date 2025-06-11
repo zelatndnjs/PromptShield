@@ -803,6 +803,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.state.Filtering_enabled = False 
+
 app.state.Mutation_enabled = False
 
 oauth_manager = OAuthManager(app)
@@ -1382,17 +1384,26 @@ async def update_defense(request: Request, req: DefenseUpdateRequest):
 
 
 # 전역 변수
-Filtering_enabled = False
+#Filtering_enabled = False 0609 광진: app.state.Filtering_enabled = False 로 위에 따로 등록함
 
 # request body를 받을 모델
 class FilteringUpdateRequest(BaseModel):
     enabled: bool
 
+""" 원래 코드 
 @app.post("/update_filtering")
 async def update_filtering(req: FilteringUpdateRequest):
     global Filtering_enabled
     Filtering_enabled = req.enabled
     return {"success": True, "Filtering_enabled": Filtering_enabled}
+"""
+
+@app.post("/update_filtering")#코드 수정 0609
+async def update_filtering(request: Request, req: FilteringUpdateRequest):
+    request.app.state.Filtering_enabled = req.enabled
+    return {"success": True, "Filtering_enabled": req.enabled}
+
+
 
 # Mutation 토글 전역 변수 (광진)
 Mutation_enabled = False
@@ -1425,7 +1436,6 @@ async def chat_completion(
 
     #여기부터 수정함
     user_message = None
-    global Filtering_enabled
     #추가
     filter_warning = None
 
@@ -1438,15 +1448,17 @@ async def chat_completion(
     # Filtering_enabled 값 기준으로 금지어 체크
      #if Filtering_enabled and user_message:
         #check_banned_words(user_message)
-    if Filtering_enabled and user_message:
+    if getattr(request.app.state, "Filtering_enabled", False) and user_message:
         result = check_banned_words(user_message)
         if not result["allowed"]:
+            warning = f"⚠️ {result['warning']}"
+            # ✅ 스트리밍 무시하고 항상 JSON 응답으로 차단 메시지 반환
             return {
                 "choices": [
                     {
                         "message": {
                             "role": "assistant",
-                            "content": f"⚠️ {result['warning']}"
+                            "content": warning
                         },
                         "finish_reason": "stop",
                         "index": 0
@@ -1455,6 +1467,9 @@ async def chat_completion(
                 "warning": result["warning"],
                 "filtered": True
             }
+
+
+
     #여기까지
     
 
